@@ -62,6 +62,7 @@ static CU_BasicRunMode f_run_mode = CU_BRM_NORMAL;
  *=================================================================*/
 static CU_ErrorCode basic_initialize(void);
 static CU_ErrorCode basic_run_all_tests(CU_pTestRegistry pRegistry);
+static CU_ErrorCode basic_run_selected_tests(CU_pTestRegistry pRegistry, int argc, char **argv);
 static CU_ErrorCode basic_run_suite(CU_pSuite pSuite);
 static CU_ErrorCode basic_run_single_test(CU_pSuite pSuite, CU_pTest pTest);
 
@@ -85,6 +86,24 @@ CU_ErrorCode CU_basic_run_tests(void)
   }
   else if (CUE_SUCCESS == (error = basic_initialize()))
     error = basic_run_all_tests(NULL);
+
+  return error;
+}
+
+/*------------------------------------------------------------------------*/
+
+CU_ErrorCode CU_basic_run_selected_tests(int argc, char **argv)
+{
+  CU_ErrorCode error;
+  fprintf(stderr,"CUNIT RUNNING SELECTED %d TESTS...\n",argc);
+
+  if (NULL == CU_get_registry()) {
+    if (CU_BRM_SILENT != f_run_mode)
+      fprintf(stderr, "\n\n%s\n", _("FATAL ERROR - Test registry is not initialized."));
+    error = CUE_NOREGISTRY;
+  }
+  else if (CUE_SUCCESS == (error = basic_initialize()))
+    error = basic_run_selected_tests(NULL,argc, argv);
 
   return error;
 }
@@ -197,6 +216,28 @@ static CU_ErrorCode basic_run_all_tests(CU_pTestRegistry pRegistry)
     CU_set_registry(pOldRegistry);
   return result;
 }
+
+/*------------------------------------------------------------------------*/
+
+/**
+	Runs selected tests. This function handles use of a specified vs global
+	registry if desired.
+*/
+static CU_ErrorCode basic_run_selected_tests(CU_pTestRegistry pRegistry, int argc, char **argv)
+{
+  CU_pTestRegistry pOldRegistry = NULL;
+  CU_ErrorCode result;
+
+  f_pRunningSuite = NULL;
+
+  if (NULL != pRegistry)
+    pOldRegistry = CU_set_registry(pRegistry);
+  result = CU_run_selected_tests(argc, argv);
+  if (NULL != pRegistry)
+    CU_set_registry(pOldRegistry);
+  return result;
+}
+
 
 /*------------------------------------------------------------------------*/
 /** Runs a specified suite within the basic interface.

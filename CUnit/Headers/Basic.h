@@ -58,6 +58,27 @@ CU_EXPORT CU_ErrorCode CU_basic_run_tests(void);
  *          CUE_NOREGISTRY - Registry has not been initialized.
  */
 
+CU_EXPORT CU_ErrorCode CU_basic_run_selected_tests(int argc, char **argv);
+/**<
+	Runs selected user-specific tests using the basic interface.
+	This can be used by higher-level code to selectively run only
+	the tests known to be failing, or the tests known to be passing,
+	etc, which is useful for quality control and convenience during
+	the build-test-code-repeat cycle.
+
+	The default CU_BasicRunMode is used unless it has been
+ 	previously changed using CU_basic_set_mode().  The CUnit test
+ 	registry must have been initialized before calling this function.
+
+	@param argc number of string arguments received
+	@param argv array of strings containing SUITENAME.TESTNAME or
+		just SUITENAME in each.
+	@return A CU_ErrorCode indicating the first error condition
+		encountered while running the tests.
+	@see CU_run_test() for running a single specific test.
+	@see CU_run_all_tests() for running the whole registry.
+*/
+
 CU_EXPORT CU_ErrorCode CU_basic_run_suite(CU_pSuite pSuite);
 /**<
  *  Runs all tests for a specific suite in the basic interface.

@@ -2,6 +2,7 @@
  *  CUnit - A Unit testing framework library for C.
  *  Copyright (C) 2001       Anil Kumar
  *  Copyright (C) 2004-2006  Anil Kumar, Jerry St.Clair
+ *  Copyright (C) 2012       John Pye
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Library General Public
@@ -60,7 +61,9 @@
  *                start and complete events.  Reworked test run routines to
  *                better support these features, suite/test activation. (JDS)
  *
- *  16-Avr-2007   Added setup and teardown functions. (CJN)
+ *  16-Apr-2007   Added setup and teardown functions. (CJN)
+ *
+ *  20-Jan-2012   Adding 'CU_run_selected_tests' (JDP)
  *
  */
 
@@ -381,6 +384,130 @@ CU_ErrorCode CU_run_all_tests(void)
   CU_set_error(result);
   return result;
 }
+
+/*------------------------------------------------------------------------*/
+CU_EXPORT CU_ErrorCode CU_run_selected_tests(int argc, char **argv){
+  CU_ErrorCode result = CUE_SUCCESS;
+  CU_ErrorCode result2;
+  struct CU_TestRegistry *reg = CU_get_registry();
+
+  clear_previous_results(&f_run_summary, &f_failure_list);
+  char **name;
+
+  fprintf(stderr,"Running selected tests...");
+
+  if(NULL == reg) {
+    result = CUE_NOREGISTRY;
+  }else if(NULL == reg->pSuite){
+    result = CUE_NO_SUITENAME;
+  }else{
+
+    /* test run is starting - set flag */
+    f_bTestIsRunning = CU_TRUE;
+    f_start_time = clock();
+
+    /* loop through the argument list */
+    for(name = argv; name < argv+argc; ++name){
+      if(result == CUE_SUCCESS || CU_get_error_action() != CUEA_IGNORE){
+        break;
+      }
+
+      fprintf(stderr,"Looking for '%s'...\n",*name);
+      /* (*name) will be a string of format SUITENAME.TESTNAME <or> SUITENAME */
+      char suitename[1000];
+      char *s,*n;
+      /* locate the '.' separator and copy bits before that into suitename. */
+      for(s=suitename,n=*name; *n!='.' && *n!='\0' && s < suitename+999; *s++=*n++);
+      *s='\0';
+
+      struct CU_Suite *suite = CU_get_suite_by_name(suitename, reg);
+      if(suite == NULL){
+        add_failure(&f_failure_list, &f_run_summary, CUF_InvalidName,
+            0, _("Invalid suite name"), _("CUnit System"), NULL, NULL
+        );
+        result = (CUE_SUCCESS == result) ? CUE_NO_SUITENAME : result;
+      }else if(CU_FALSE == suite->fActive){
+        f_run_summary.nSuitesInactive++;
+        if(CU_FALSE != f_failure_on_inactive){
+          add_failure(&f_failure_list, &f_run_summary, CUF_SuiteInactive,
+              0, _("Suite inactive"), _("CUnit System"), suite, NULL
+          );
+        }
+        result = (CUE_SUCCESS == result) ? CUE_SUITE_INACTIVE : result;
+      }else{
+        /* found the suite, did we also get a test name? */
+        if(*n=='.'){
+          struct CU_Test *test;
+          test = CU_get_test_by_name(n,suite);
+          if(test == NULL){
+            /* no matching tset found. */
+            add_failure(&f_failure_list, &f_run_summary, CUF_InvalidName,
+                0, _("Invalid test name"), _("CUnit System"), suite, NULL
+            );
+            result = (CUE_SUCCESS == result) ? CUE_NO_TESTNAME : result;
+          }else{
+             /* found a valid suite+test name... run the test! */
+
+            /* run handler for suite start, if any */
+            if (NULL != f_pSuiteStartMessageHandler) {
+              (*f_pSuiteStartMessageHandler)(suite);
+            }
+            /* TODO if multiple tests from s single suite requested, avoid repeating the suite start/stop? */
+
+            /* run the suite initialization function, if any */
+            if ((NULL != suite->pInitializeFunc) && (0 != (*suite->pInitializeFunc)())) {
+              /* init function had an error - call handler, if any */
+              if (NULL != f_pSuiteInitFailureMessageHandler) {
+                (*f_pSuiteInitFailureMessageHandler)(suite);
+              }
+              f_run_summary.nSuitesFailed++;
+              add_failure(&f_failure_list, &f_run_summary, CUF_SuiteInitFailed, 0,
+                          _("Suite Initialization failed - Suite Skipped"),
+                          _("CUnit System"), suite, NULL);
+              result = CUE_SINIT_FAILED;
+            }else{
+              fprintf(stderr,"Running test '%s'...\n",*name);
+              result2 = run_single_test(test, &f_run_summary);
+              result = (CUE_SUCCESS == result) ? result2 : result;
+
+              /* run the suite cleanup function, if any */
+              if ((NULL != suite->pCleanupFunc) && (0 != (*suite->pCleanupFunc)())) {
+                /* cleanup function had an error - call handler, if any */
+                if (NULL != f_pSuiteCleanupFailureMessageHandler) {
+                  (*f_pSuiteCleanupFailureMessageHandler)(suite);
+                }
+                f_run_summary.nSuitesFailed++;
+                add_failure(&f_failure_list, &f_run_summary, CUF_SuiteCleanupFailed,
+                            0, _("Suite cleanup failed."), _("CUnit System"), suite, NULL);
+                result = (CUE_SUCCESS == result) ? CUE_SCLEAN_FAILED : result;
+              }
+            }
+          }
+        }else{
+
+          /* found a suite name only...run the whole suite */
+          fprintf(stderr,"Running suite '%s'...\n",*name);
+          result2 = run_single_suite(suite, &f_run_summary);
+          result = (CUE_SUCCESS == result) ? result2 : result;
+          break;
+        }
+      }
+    }
+
+    /* test run is complete - clear flag */
+    f_bTestIsRunning = CU_FALSE;
+    f_run_summary.ElapsedTime = ((double)clock() - (double)f_start_time)/(double)CLOCKS_PER_SEC;
+
+    /* run handler for overall completion, if any */
+    if (NULL != f_pAllTestsCompleteMessageHandler) {
+      (*f_pAllTestsCompleteMessageHandler)(f_failure_list);
+    }
+  }
+
+  CU_set_error(result);
+  return result;
+}
+
 
 /*------------------------------------------------------------------------*/
 CU_ErrorCode CU_run_suite(CU_pSuite pSuite)

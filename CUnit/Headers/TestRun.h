@@ -2,6 +2,7 @@
  *  CUnit - A Unit testing framework library for C.
  *  Copyright (C) 2001       Anil Kumar
  *  Copyright (C) 2004-2006  Anil Kumar, Jerry St.Clair
+ *  Copyright (C) 2012-2006  John Pye
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Library General Public
@@ -44,6 +45,8 @@
  *
  *  24-May-2006   Added callbacks for suite start and complete events.
  *                Added tracking/reported of elapsed time.  (JDS)
+ *
+ *  20-Jan-2012   Adding 'CU_run_selected_tests' (JDP)
  */
 
 /** @file
@@ -83,7 +86,8 @@ typedef enum CU_FailureTypes
   CUF_SuiteInitFailed,      /**< Suite initialization function failed. */
   CUF_SuiteCleanupFailed,   /**< Suite cleanup function failed. */
   CUF_TestInactive,         /**< Inactive test was run. */
-  CUF_AssertFailed          /**< CUnit assertion failed during test run. */
+  CUF_AssertFailed,         /**< CUnit assertion failed during test run. */
+  CUF_InvalidName			/**< Unknown suite or test name encountered */
 } CU_FailureType;           /**< Failure type. */
 
 /* CU_FailureRecord type definition. */
@@ -224,6 +228,23 @@ CU_EXPORT CU_ErrorCode CU_run_all_tests(void);
  *  @see CU_run_suite() to run the tests in a specific suite.
  *  @see CU_run_test() for run a specific test only.
  */
+
+CU_EXPORT CU_ErrorCode CU_run_selected_tests(int argc, char **argv);
+/**<
+	Runs selected user-specific tests and/or suites from the registry.
+	This can be used by higher-level code to selectively run only
+	the tests known to be failing, or the tests known to be passing,
+	etc, which is useful for quality control and convenience during
+	the build-test-code-repeat cycle.
+
+	@param argc number of string arguments received
+	@param argv array of strings containing SUITENAME.TESTNAME or
+		just SUITENAME in each.
+	@return A CU_ErrorCode indicating the first error condition
+		encountered while running the tests.
+	@see CU_run_test() for running a single specific test.
+	@see CU_run_all_tests() for running the whole registry.
+*/
 
 CU_EXPORT CU_ErrorCode CU_run_suite(CU_pSuite pSuite);
 /**<
