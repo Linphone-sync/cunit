@@ -6,9 +6,9 @@ AM_INIT_AUTOMAKE(CUnit, 2.2)
 dnl Package version information
 PACKAGE=CUnit
 VERSION_MAJOR=2
-VERSION_MINOR=1
+VERSION_MINOR=2
 VERSION=${VERSION_MAJOR}.${VERSION_MINOR}
-RELEASE=2
+RELEASE=0
 
 dnl Shared library version information
 dnl
@@ -20,7 +20,7 @@ dnl Suffix1  = [Current - Age] (on Linux, anyway, soname suffix is [C-A].A.R)
 dnl
 LIBTOOL_CURRENT=1
 LIBTOOL_REVISION=1
-LIBTOOL_AGE=0
+LIBTOOL_AGE=1
 LIBTOOL_SUFFIX1=1
 LIBTOOL_SUFFIX=${LIBTOOL_SUFFIX1}.${LIBTOOL_AGE}.${LIBTOOL_REVISION}
 
