@@ -480,12 +480,12 @@ CU_EXPORT CU_ErrorCode CU_run_selected_tests(int argc, char **argv){
           /* found a suite name only...run the whole suite */
           //fprintf(stderr,"Running suite '%s'...\n",*name);
           result2 = run_single_suite(suite, &f_run_summary);
-          fprintf(stderr,"Suite results = %d\n",result2);
+          //fprintf(stderr,"Suite results = %d\n",result2);
           if(result2 != CUE_SUCCESS){
             f_run_summary.nSuitesFailed++;
-          }else{
+          }/*else{
             fprintf(stderr,"Suite result = success\n");
-          }
+          }*/
           result = (CUE_SUCCESS == result) ? result2 : result;
         }
       }
