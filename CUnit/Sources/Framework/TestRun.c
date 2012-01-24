@@ -473,18 +473,6 @@ CU_EXPORT CU_ErrorCode CU_run_selected_tests(int argc, char **argv){
               result2 = run_single_test(test, &f_run_summary);
               f_pCurSuite = NULL;
               result = (CUE_SUCCESS == result) ? result2 : result;
-
-              /* run the suite cleanup function, if any */
-              if ((NULL != suite->pCleanupFunc) && (0 != (*suite->pCleanupFunc)())) {
-                /* cleanup function had an error - call handler, if any */
-                if (NULL != f_pSuiteCleanupFailureMessageHandler) {
-                  (*f_pSuiteCleanupFailureMessageHandler)(suite);
-                }
-                f_run_summary.nSuitesFailed++;
-                add_failure(&f_failure_list, &f_run_summary, CUF_SuiteCleanupFailed,
-                            0, _("Suite cleanup failed."), _("CUnit System"), suite, NULL);
-                result = (CUE_SUCCESS == result) ? CUE_SCLEAN_FAILED : result;
-              }
             }
             fprintf(stderr,"Finished with test '%s'\n",*name);
           }
@@ -492,6 +480,12 @@ CU_EXPORT CU_ErrorCode CU_run_selected_tests(int argc, char **argv){
           /* found a suite name only...run the whole suite */
           fprintf(stderr,"Running suite '%s'...\n",*name);
           result2 = run_single_suite(suite, &f_run_summary);
+          fprintf(stderr,"Suite results = %d\n",result2);
+          if(result2 != CUE_SUCCESS){
+            f_run_summary.nSuitesFailed++;
+          }else{
+            fprintf(stderr,"Suite result = success\n");
+          }
           result = (CUE_SUCCESS == result) ? result2 : result;
         }
       }
@@ -514,6 +508,7 @@ CU_EXPORT CU_ErrorCode CU_run_selected_tests(int argc, char **argv){
   }
 
   CU_set_error(result);
+  fprintf(stderr,"Final result code = %d\n",result);
   return result;
 }
 
@@ -826,6 +821,10 @@ static void add_failure(CU_pFailureRecord* ppFailure,
 
   assert(NULL != ppFailure);
 
+  fprintf(stderr,"%s:%d:Got new failure '%s' in suite '%s'\n"
+      ,szFileName?szFileName:"(no filename)",uiLineNumber,szCondition,pSuite?pSuite->pName:"NULL"
+  );
+
   pFailureNew = (CU_pFailureRecord)CU_MALLOC(sizeof(CU_FailureRecord));
 
   if (NULL == pFailureNew) {
@@ -1010,7 +1009,9 @@ static CU_ErrorCode run_single_suite(CU_pSuite pSuite, CU_pRunSummary pRunSummar
       while ((NULL != pTest) && ((CUE_SUCCESS == result) || (CU_get_error_action() == CUEA_IGNORE))) {
         if (CU_FALSE != pTest->fActive) {
           result2 = run_single_test(pTest, pRunSummary);
+          //fprintf(stderr,"Test result = %d, (current flag = %d)\n",result2,result);
           result = (CUE_SUCCESS == result) ? result2 : result;
+          //fprintf(stderr,"(current flag = %d)\n",result);
         }
         else {
           f_run_summary.nTestsInactive++;
@@ -1115,6 +1116,7 @@ static CU_ErrorCode run_single_test(CU_pTest pTest, CU_pRunSummary pRunSummary)
 
   /* run test if it is active */
   if (CU_FALSE != pTest->fActive) {
+    //fprintf(stderr,"active test...\n");
 
     if (NULL != f_pCurSuite->pSetUpFunc) {
       (*f_pCurSuite->pSetUpFunc)();
@@ -1144,22 +1146,24 @@ static CU_ErrorCode run_single_test(CU_pTest pTest, CU_pRunSummary pRunSummary)
   }
 
   /* if additional failures have occurred... */
-  if (pRunSummary->nFailureRecords > nStartFailures) {
+  if(pRunSummary->nFailureRecords > nStartFailures) {
+    //fprintf(stderr,"\nFound some failures...\n");
     pRunSummary->nTestsFailed++;
-    if (NULL != pLastFailure) {
+    if(NULL != pLastFailure) {
       pLastFailure = pLastFailure->pNext;  /* was a previous failure, so go to next one */
-    }
-    else {
+    }else{
       pLastFailure = f_failure_list;       /* no previous failure - go to 1st one */
     }
-  }
-  else {
+    result = CUE_TEST_FAIL;
+  }else{
     pLastFailure = NULL;                   /* no additional failure - set to NULL */
   }
 
-  if (NULL != f_pTestCompleteMessageHandler) {
+  if(NULL != f_pTestCompleteMessageHandler) {
     (*f_pTestCompleteMessageHandler)(f_pCurTest, f_pCurSuite, pLastFailure);
   }
+
+  //fprintf(stderr,"Finished with 'test complete handler'\n");
 
   pTest->pJumpBuf = NULL;
   f_pCurTest = NULL;

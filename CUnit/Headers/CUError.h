@@ -82,6 +82,7 @@ typedef enum {
   CUE_DUP_TEST          = 32,  /**< Duplicate test case name not allowed. */
   CUE_TEST_NOT_IN_SUITE = 33,  /**< Test not registered in specified suite. */
   CUE_TEST_INACTIVE     = 34,  /**< Test run initiated for an inactive test. */
+  CUE_TEST_FAIL         = 35,  /**< Somewhere a test failed! */
 
   /* File handling errors */
   CUE_FOPEN_FAILED      = 40,  /**< An error occurred opening a file. */
