@@ -394,7 +394,7 @@ CU_EXPORT CU_ErrorCode CU_run_selected_tests(int argc, char **argv){
   clear_previous_results(&f_run_summary, &f_failure_list);
   char **name;
 
-  fprintf(stderr,"Running selected tests...");
+  //fprintf(stderr,"Running selected tests...");
 
   if(NULL == reg) {
     result = CUE_NOREGISTRY;
@@ -408,7 +408,7 @@ CU_EXPORT CU_ErrorCode CU_run_selected_tests(int argc, char **argv){
 
     /* loop through the argument list */
     for(name = argv; name <= &argv[argc-1]; ++name){
-      fprintf(stderr,"Looking for '%s'...\n",*name);
+      //fprintf(stderr,"Looking for '%s'...\n",*name);
       /* (*name) will be a string of format SUITENAME.TESTNAME <or> SUITENAME */
       char suitename[1000];
       char *s,*n;
@@ -438,14 +438,14 @@ CU_EXPORT CU_ErrorCode CU_run_selected_tests(int argc, char **argv){
           struct CU_Test *test;
           test = CU_get_test_by_name(n,suite);
           if(test == NULL){
-            fprintf(stderr,"No matching test '%s'\n",n);
+            //fprintf(stderr,"No matching test '%s'\n",n);
             /* no matching tset found. */
             add_failure(&f_failure_list, &f_run_summary, CUF_InvalidName,
                 0, _("Invalid test name"), _("CUnit System"), suite, NULL
             );
             result = (CUE_SUCCESS == result) ? CUE_NO_TESTNAME : result;
           }else{
-            fprintf(stderr,"Valid test '%s' in suite '%s'\n",n,suitename);
+            //fprintf(stderr,"Valid test '%s' in suite '%s'\n",n,suitename);
              /* found a valid suite+test name... run the test! */
 
             /* run handler for suite start, if any */
@@ -468,17 +468,17 @@ CU_EXPORT CU_ErrorCode CU_run_selected_tests(int argc, char **argv){
                           _("CUnit System"), suite, NULL);
               result = CUE_SINIT_FAILED;
             }else{
-              fprintf(stderr,"Running test '%s'...\n",*name);
+              //fprintf(stderr,"Running test '%s'...\n",*name);
               f_pCurSuite = suite;
               result2 = run_single_test(test, &f_run_summary);
               f_pCurSuite = NULL;
               result = (CUE_SUCCESS == result) ? result2 : result;
             }
-            fprintf(stderr,"Finished with test '%s'\n",*name);
+            //fprintf(stderr,"Finished with test '%s'\n",*name);
           }
         }else{
           /* found a suite name only...run the whole suite */
-          fprintf(stderr,"Running suite '%s'...\n",*name);
+          //fprintf(stderr,"Running suite '%s'...\n",*name);
           result2 = run_single_suite(suite, &f_run_summary);
           fprintf(stderr,"Suite results = %d\n",result2);
           if(result2 != CUE_SUCCESS){
@@ -500,7 +500,7 @@ CU_EXPORT CU_ErrorCode CU_run_selected_tests(int argc, char **argv){
     f_bTestIsRunning = CU_FALSE;
     f_run_summary.ElapsedTime = ((double)clock() - (double)f_start_time)/(double)CLOCKS_PER_SEC;
 
-    fprintf(stderr,"Running overall completion handler...\n");
+    //fprintf(stderr,"Running overall completion handler...\n");
     /* run handler for overall completion, if any */
     if (NULL != f_pAllTestsCompleteMessageHandler) {
       (*f_pAllTestsCompleteMessageHandler)(f_failure_list);
