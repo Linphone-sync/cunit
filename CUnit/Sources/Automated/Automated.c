@@ -39,6 +39,8 @@
  *  02-May-2006   Added internationalization hooks.  (JDS)
  *
  *  07-May-2011   Added patch to fix broken xml tags dur to spacial characters in the test name.  (AK)
+ *
+ *  16-Mar-2018   Add path for JUNIT tests in Jenkins. Also log the faults in XML output. (BHO)
  */
 
 /** @file
@@ -84,6 +86,7 @@ static char _gPackageName[50] = "";
  *  Static function forward declarations
  *=================================================================*/
 static CU_ErrorCode automated_list_all_tests(CU_pTestRegistry pRegistry, const char* szFilename);
+static CU_ErrorCode automated_junit_list_all_tests(CU_pTestRegistry pRegistry, const char* szFilename);
 
 static CU_ErrorCode initialize_result_file(const char* szFilename);
 static CU_ErrorCode uninitialize_result_file(void);
@@ -766,4 +769,108 @@ const char *CU_automated_package_name_get()
 {
  return _gPackageName;
 }
+
+/*------------------------------------------------------------------------*/
+/** Generates an xml junit listing compatible with Jenkins.
+ */
+CU_ErrorCode CU_list_tests_to_junit_file()
+{
+	  /* if a filename root hasn't been set, use the default one */
+	  if (0 == strlen(f_szTestListFileName)) {
+	    CU_set_output_filename(f_szDefaultFileRoot);
+	  }
+
+	  return automated_junit_list_all_tests(CU_get_registry(), f_szTestListFileName);
+}
+
+/*------------------------------------------------------------------------*/
+/** Generates an xml junit listing of all tests in all suites for the
+ *  specified test registry.  The output is directed to a file
+ *  having the specified name.
+ *  @param pRegistry   Test registry for which to generate list (non-NULL).
+ *  @param szFilename  Non-NULL, non-empty string containing name for
+ *                     listing file.
+ *  @return  A CU_ErrorCode indicating the error status.
+ */
+static CU_ErrorCode automated_junit_list_all_tests(CU_pTestRegistry pRegistry, const char* szFilename)
+{
+  CU_pSuite pSuite = NULL;
+  CU_pTest  pTest = NULL;
+  FILE* pTestListFile = NULL;
+  char* szTime;
+  time_t tTime = 0;
+  CU_pFailureRecord pFail = NULL;
+
+  CU_set_error(CUE_SUCCESS);
+
+  if (NULL == pRegistry) {
+    CU_set_error(CUE_NOREGISTRY);
+  }
+  else if ((NULL == szFilename) || (0 == strlen(szFilename))) {
+    CU_set_error(CUE_BAD_FILENAME);
+  }
+  else if (NULL == (pTestListFile = fopen(f_szTestListFileName, "w"))) {
+    CU_set_error(CUE_FOPEN_FAILED);
+  }
+  else {
+    setvbuf(pTestListFile, NULL, _IONBF, 0);
+
+    fprintf(pTestListFile,
+    		"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+    		"<testsuites disabled=\"\" errors=\"\" failures=\"\" name=\"\" tests=\"\" time=\"\">\n");
+
+    pSuite = pRegistry->pSuite;
+    while (NULL != pSuite) {
+      assert(NULL != pSuite->pName);
+      pTest = pSuite->pTest;
+
+      fprintf(pTestListFile,
+    		  "<testsuite disabled=\"\" errors=\"\" failures=\"\" hostname=\"\" id=\"\" "
+    		  "name=\"%s\" package=\"\" skipped=\"\" tests=\"%d\" time=\"\" timestamp=\"\">\n",
+			  pSuite->pName,
+			  pSuite->uiNumberOfTests);
+
+      while (NULL != pTest) {
+        assert(NULL != pTest->pName);
+
+        fprintf(pTestListFile, "<testcase classname=\"\" name=\"%s\">\n",
+        		 pTest->pName);
+        pFail = CU_get_failure_list();
+        while (NULL != pFail)
+        {
+        	if (pFail->pTest == pTest)
+        	{
+            	fprintf(pTestListFile, "<failure message=\"%s:%d:%s\" type=\"%d\"/>\n",
+           			 pFail->strFileName, pFail->uiLineNumber, pFail->strCondition, pFail->type);
+        	}
+
+        	pFail = pFail->pNext;
+        }
+
+        fprintf(pTestListFile, "</testcase>\n ");
+        pTest = pTest->pNext;
+      }
+      fprintf(pTestListFile,
+    		  "</testsuite>\n ");
+
+      pSuite = pSuite->pNext;
+    }
+
+    fprintf(pTestListFile, "</testsuites>\n ");
+
+    time(&tTime);
+    szTime = ctime(&tTime);
+    fprintf(pTestListFile,
+            "  <!-- CUNIT TEST " CU_VERSION " -->\n",
+            (NULL != szTime) ? szTime : "");
+
+    if (0 != fclose(pTestListFile)) {
+      CU_set_error(CUE_FCLOSE_FAILED);
+    }
+  }
+
+  return CU_get_error();
+}
+
+
 /** @} */
