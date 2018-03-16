@@ -66,6 +66,13 @@ CU_EXPORT CU_ErrorCode CU_list_tests_to_file(void);
  *  @return An error code indicating the error status.
  */
 
+CU_EXPORT CU_ErrorCode CU_list_tests_to_junit_file(void);
+/**<
+ *  Creates a Junit file which is compatible with Jenkins.
+ *
+ *  @param szFilenameRoot String containing root to use for file names.
+ */
+
 CU_EXPORT void CU_set_output_filename(const char* szFilenameRoot);
 /**<
  *  Sets the root file name for automated test output files.
