@@ -800,6 +800,7 @@ static CU_ErrorCode automated_junit_list_all_tests(CU_pTestRegistry pRegistry, c
   char* szTime;
   time_t tTime = 0;
   CU_pFailureRecord pFail = NULL;
+  CU_pLoggingRecord pComment = NULL;
 
   CU_set_error(CUE_SUCCESS);
 
@@ -833,18 +834,33 @@ static CU_ErrorCode automated_junit_list_all_tests(CU_pTestRegistry pRegistry, c
       while (NULL != pTest) {
         assert(NULL != pTest->pName);
 
-        fprintf(pTestListFile, "<testcase classname=\"\" name=\"%s\">\n",
-        		 pTest->pName);
+        fprintf(pTestListFile, "<testcase classname=\"\" name=\"%s\" assertions=\"%d\">\n",
+        		 pTest->pName, pTest->assertions);
         pFail = CU_get_failure_list();
         while (NULL != pFail)
         {
-        	if (pFail->pTest == pTest)
+        	if (pFail->pTest == pTest && pFail->strCondition != NULL)
         	{
+        		int szTempName_len;
+        		char *szTempName = (char *)CU_MALLOC((szTempName_len = CU_translated_strlen(pFail->strCondition) + 1));
+        		CU_translate_special_characters(pFail->strCondition, szTempName, szTempName_len);
             	fprintf(pTestListFile, "<failure message=\"%s:%d:%s\" type=\"%d\"/>\n",
-           			 pFail->strFileName, pFail->uiLineNumber, pFail->strCondition, pFail->type);
+           			 pFail->strFileName, pFail->uiLineNumber, szTempName, pFail->type);
         	}
 
         	pFail = pFail->pNext;
+        }
+        pComment = CU_get_comment_list();
+        while (NULL != pComment)
+        {
+        	if (pComment->pTest == pTest)
+        	{
+        		int szTempName_len;
+        		char *szTempName = (char *)CU_MALLOC((szTempName_len = CU_translated_strlen(pComment->strMessage) + 1));
+        		CU_translate_special_characters(pComment->strMessage, szTempName, szTempName_len);
+            	fprintf(pTestListFile, "%s", szTempName);
+        	}
+        	pComment = pComment->pNext;
         }
 
         fprintf(pTestListFile, "</testcase>\n ");
