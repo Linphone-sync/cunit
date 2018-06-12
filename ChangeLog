@@ -1,3 +1,10 @@
+* Mar 2018 Bart Houkes
+- Add JENKINS compliant JUNIT function to export test results.
+- Add number of tests passed/failed inside the XML report.
+- Option to add comments inside the XML report.
+- Add wildcards to your test output, e.g. CU_LOG("%d %s %f", x,y, z);
+- Add wildcards in asserts.
+
 * Tue Oct 14 2010 Martin Gerhardy <tlh2000@users.sourceforge.net>
   - release 2.1.1
 
