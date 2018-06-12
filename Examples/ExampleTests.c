@@ -83,11 +83,14 @@ static void testAssertTrue(void)
 
 static void testAssertFalse(void)
 {
+  int a=3, b=5;
   CU_ASSERT_FALSE(CU_FALSE);
   CU_ASSERT_FALSE(!CU_TRUE);
-
+  CU_LOG("test will assert now");
   CU_ASSERT_FALSE(!CU_FALSE);
   CU_ASSERT_FALSE(CU_TRUE);
+  if (a!=b)
+     CU_ASSERT("a is not b %d!=%d", a,b);
 }
 
 static void testAssertEqual(void)
