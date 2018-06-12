@@ -40,7 +40,10 @@
  *
  *  07-May-2011   Added patch to fix broken xml tags dur to spacial characters in the test name.  (AK)
  *
- *  16-Mar-2018   Add path for JUNIT tests in Jenkins. Also log the faults in XML output. (BHO)
+ *  16-Mar-2018   Add path for JUNIT tests in Jenkins. Also log the faults in XML output. (Bart Houkes)
+ *
+ *  1-May-2018    Add Normal comments to JUNIT output (use CU_LOG(...)
+ *
  */
 
 /** @file
@@ -834,18 +837,15 @@ static CU_ErrorCode automated_junit_list_all_tests(CU_pTestRegistry pRegistry, c
       while (NULL != pTest) {
         assert(NULL != pTest->pName);
 
-        fprintf(pTestListFile, "<testcase classname=\"\" name=\"%s\" assertions=\"%d\">\n",
-        		 pTest->pName, pTest->assertions);
+        fprintf(pTestListFile, "<testcase classname=\"\" name=\"%s\">\n",
+        		 pTest->pName);
         pFail = CU_get_failure_list();
         while (NULL != pFail)
         {
-        	if (pFail->pTest == pTest && pFail->strCondition != NULL)
+        	if (pFail->pTest == pTest)
         	{
-        		int szTempName_len;
-        		char *szTempName = (char *)CU_MALLOC((szTempName_len = CU_translated_strlen(pFail->strCondition) + 1));
-        		CU_translate_special_characters(pFail->strCondition, szTempName, szTempName_len);
             	fprintf(pTestListFile, "<failure message=\"%s:%d:%s\" type=\"%d\"/>\n",
-           			 pFail->strFileName, pFail->uiLineNumber, szTempName, pFail->type);
+           			 pFail->strFileName, pFail->uiLineNumber, pFail->strCondition, pFail->type);
         	}
 
         	pFail = pFail->pNext;
@@ -855,10 +855,7 @@ static CU_ErrorCode automated_junit_list_all_tests(CU_pTestRegistry pRegistry, c
         {
         	if (pComment->pTest == pTest)
         	{
-        		int szTempName_len;
-        		char *szTempName = (char *)CU_MALLOC((szTempName_len = CU_translated_strlen(pComment->strMessage) + 1));
-        		CU_translate_special_characters(pComment->strMessage, szTempName, szTempName_len);
-            	fprintf(pTestListFile, "%s", szTempName);
+            	fprintf(pTestListFile, "%s", pComment->strMessage);
         	}
         	pComment = pComment->pNext;
         }
