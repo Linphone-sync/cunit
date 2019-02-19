@@ -102,7 +102,9 @@
 #    define CU_EXPORT
 #  endif
 #  ifdef _MSC_VER
-#    define snprintf _snprintf
+#    if _MSC_VER < 1900
+#      define snprintf _snprintf
+#    endif
 #  endif
 #else
 #  define CU_EXPORT
